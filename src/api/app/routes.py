@@ -42,7 +42,16 @@ def upload_document(
     db.add(job)
     db.flush()  # get IDs without committing yet
 
-    # Stream upload to MinIO without loading the entire file into memory.
+    # Enqueue parse task before uploading to MinIO so a dispatch failure
+    # leaves no orphaned object-storage data and allows a clean DB rollback.
+    try:
+        parse_document.apply_async(args=[str(job.id), str(doc.id), file.filename])
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(status_code=503, detail=f"Failed to enqueue parse task: {exc}")
+
+    # Upload to MinIO after task is successfully queued.
+    # Stream directly to avoid loading the entire file into memory:
     # seek to end to measure size, then rewind for the actual upload.
     raw_key = f"raw/{doc.id}/{file.filename}"
     minio = get_minio_client()
@@ -57,13 +66,6 @@ def upload_document(
         length=file_size,
         content_type=content_type,
     )
-
-    # Enqueue parse task before committing so we can roll back DB if dispatch fails.
-    try:
-        parse_document.delay(str(job.id), str(doc.id), file.filename)
-    except Exception as exc:
-        db.rollback()
-        raise HTTPException(status_code=503, detail=f"Failed to enqueue parse task: {exc}")
 
     db.commit()
 
