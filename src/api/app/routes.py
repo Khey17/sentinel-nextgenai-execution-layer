@@ -73,9 +73,10 @@ def upload_document(
     # to the next, so each task receives only its own explicit arguments.
     try:
         from celery import chain
-        from app.worker import redact_document, extract_document
+        from app.worker import authenticate_document, redact_document, extract_document
         chain(
             parse_document.s(str(job.id), str(doc.id), file.filename),
+            authenticate_document.si(str(job.id), str(doc.id), file.filename),
             redact_document.si(str(job.id), str(doc.id)),
             extract_document.si(str(job.id), str(doc.id)),
         ).apply_async()
