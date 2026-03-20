@@ -102,6 +102,16 @@ An orchestrator coordinates both agents. Evaluation always runs first; credit an
 This architecture is designed for batch processing — think thousands of customer loan applications processed overnight, each file moving through the same guaranteed pipeline with no human reading a single raw document. The agents operate in parallel across a worker pool, the audit trail captures every step, and the entire run is observable via the metrics layer.
 
 ---
+## Checklist
+- [ ] Providing deatils on failure jobs
+- [ ] Setup an Output directory
+- [ ] SAve the Metadata into Postgres Database
+- [ ] Test out different usecases
+- [ ] Possibly engineer some data for downstream folks
+- [ ] Setup Google API account
+- [ ] Setup a Confidence Score
+
+---
 
 **Project status**
 - [x] Repo initialized
